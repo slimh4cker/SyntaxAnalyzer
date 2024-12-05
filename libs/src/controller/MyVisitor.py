@@ -1,6 +1,8 @@
 from libs.src.controller.output.SlimParser import SlimParser
 from libs.src.controller.output.SlimVisitor import SlimVisitor
 from libs.src.utils.classes.ErrorVisitorHandler import ErrorVisitorHandler
+from libs.src.utils.func.validate_variable import detect_uninitialized_variables
+
 
 class MyVisitor(SlimVisitor):
     def __init__(self):
@@ -10,11 +12,18 @@ class MyVisitor(SlimVisitor):
 
     def visitAssignment(self, ctx: SlimParser.AssignmentContext):
         variable_name = ctx.ID().getText()
-        try:
-            value = self.visit(ctx.expr())
+        expr = ctx.expr()
+        uninitialized_variables = detect_uninitialized_variables(expr, self.variables)
+
+        if uninitialized_variables:
+            line, column = ctx.start.line, ctx.start.column
+            error_msg = self.error_handler.report_error(
+                line, column, f"Uninitialized variable -> {', '.join(uninitialized_variables)}"
+            )
+            self.output.append(error_msg)
+        else:
+            value = self.visit(expr)
             self.variables[variable_name] = value
-        except NameError as e:
-            self.output.append(str(e))
 
     def visitPrint(self, ctx: SlimParser.PrintContext):
         if ctx.ID():
@@ -27,11 +36,9 @@ class MyVisitor(SlimVisitor):
                 self.output.append(error_msg)
             else:
                 value = self.variables[variable_name]
-                print(value)
                 self.output.append(value)
         elif ctx.expr():
             result = self.visit(ctx.expr())
-            print(result)
             self.output.append(result)
 
     def visitSumRes(self, ctx: SlimParser.SumResContext):
@@ -63,4 +70,3 @@ class MyVisitor(SlimVisitor):
 
     def visitParenthesis(self, ctx: SlimParser.ParenthesisContext):
         return self.visit(ctx.expr())
-

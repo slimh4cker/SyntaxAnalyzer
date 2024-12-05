@@ -9,8 +9,9 @@ body:
     ;
 
 print:
-    ID ';' | expr ';'
+    (ID | expr) ';'
     ;
+
 
 assignment:
     ID '=' expr ';'
