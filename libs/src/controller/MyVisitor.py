@@ -2,7 +2,6 @@ from libs.src.controller.output.SlimParser import SlimParser
 from libs.src.controller.output.SlimVisitor import SlimVisitor
 from libs.src.utils.classes.ErrorVisitorHandler import ErrorVisitorHandler
 
-
 class MyVisitor(SlimVisitor):
     def __init__(self):
         self.variables = {}
@@ -37,46 +36,21 @@ class MyVisitor(SlimVisitor):
 
     def visitSumRes(self, ctx: SlimParser.SumResContext):
         left = self.visit(ctx.expr(0))
-        if ctx.expr(1) is None:
-            line, column = ctx.start.line, ctx.start.column
-            error_msg = self.error_handler.report_error(
-                line, column, "operator '+' at the end of the expression"
-            )
-            self.output.append(error_msg)
-            raise SyntaxError(error_msg)
-
         right = self.visit(ctx.expr(1))
         return left + right if ctx.SUM() else left - right
 
     def visitMulDiv(self, ctx: SlimParser.MulDivContext):
         left = self.visit(ctx.expr(0))
-        if ctx.expr(1) is None:
-            line, column = ctx.start.line, ctx.start.column
-            error_msg = self.error_handler.report_error(
-                line, column, "operator '*' or '/' at the end of the expression"
-            )
-            self.output.append(error_msg)
-            raise SyntaxError(error_msg)
-
         right = self.visit(ctx.expr(1))
         if ctx.DIV() and right == 0:
-            line, column = ctx.start.line, ctx.start.column
-            error_msg = self.error_handler.report_error(line, column, "Division by zero")
+            line = ctx.start.line
+            column = ctx.start.column
+            error_msg = f"at line {line}:{column}: Division by zero"
             self.output.append(error_msg)
-            raise ZeroDivisionError(error_msg)
-
         return left * right if ctx.POR() else left / right
 
     def visitExponential(self, ctx: SlimParser.ExponentialContext):
         left = self.visit(ctx.expr(0))
-        if ctx.expr(1) is None:
-            line, column = ctx.start.line, ctx.start.column
-            error_msg = self.error_handler.report_error(
-                line, column, "operator '**' at the end of the expression"
-            )
-            self.output.append(error_msg)
-            raise SyntaxError(error_msg)
-
         right = self.visit(ctx.expr(1))
         return left ** right
 
@@ -89,3 +63,4 @@ class MyVisitor(SlimVisitor):
 
     def visitParenthesis(self, ctx: SlimParser.ParenthesisContext):
         return self.visit(ctx.expr())
+
